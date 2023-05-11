@@ -1,0 +1,29 @@
+fc_glm:
+  local_dataset:
+    train: "train.npz"
+    test: "test.npz"
+    central_test: null
+    detail:
+      sep: ','
+      label: "Group"
+    init_model: "model.pt"
+
+  centralized: True
+
+  simulation:
+    clients_dir: c1,c2,c3 # Comma separated list of clients' directories
+
+  logic:
+#    mode: "file"
+#    dir: "."
+    mode: "directory"
+    dir: "data"
+
+
+  result:
+    pred: "y_pred.csv"
+    target: "y_test.csv"
+    model: "model.pt"
+
+
+  use_smpc: True

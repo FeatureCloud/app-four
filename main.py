@@ -5,7 +5,7 @@ from FeatureCloud.app.api.http_web import web_server
 
 from FeatureCloud.app.engine.app import app
 import os
-import states
+import FourStates
 
 server = Bottle()
 
