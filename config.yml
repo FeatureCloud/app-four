@@ -1,4 +1,4 @@
-fc_glm:
+fc_example_aconfig:
   local_dataset:
     train: "train.npz"
     test: "test.npz"
@@ -14,11 +14,8 @@ fc_glm:
     clients_dir: c1,c2,c3 # Comma separated list of clients' directories
 
   logic:
-#    mode: "file"
-#    dir: "."
-    mode: "directory"
-    dir: "data"
-
+    mode: "file"
+    dir: "."
 
   result:
     pred: "y_pred.csv"
@@ -26,4 +23,4 @@ fc_glm:
     model: "model.pt"
 
 
-  use_smpc: True
+  use_smpc: False
