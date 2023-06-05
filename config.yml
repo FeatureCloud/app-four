@@ -1,4 +1,4 @@
-fc_example_aconfig:
+fc_example_config:
   local_dataset:
     train: "train.npz"
     test: "test.npz"

@@ -83,7 +83,7 @@ from engine.app import app
 
 server = Bottle()
 ```
-One can implement desired states in [`states.py`](states.py) and import it, which because of putting 
+One can implement desired states in [`states.py`](myapp.py) and import it, which because of putting 
 [`app_state`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine/README.md#registering-states-to-the-app-app_state) on top of state classes, 
 merely importing the states and registering them into the [`app` instance](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine/README.md#app-instance).     
 
