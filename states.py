@@ -44,7 +44,6 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
 
         def run(self):
             received_data = self.await_data()
-            received_data = received_data if received_data else None
             data_to_send = target_app_instance.local_training(global_parameters=received_data)
             if data_to_send:
                 self.send_data_to_coordinator(data_to_send,
@@ -67,6 +66,7 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
             else:
                 local_data = self.gather_data()
             data_to_broadcast = target_app_instance.global_aggregation(local_parameters=local_data)
+            print(data_to_broadcast)
             self.broadcast_data(data_to_broadcast)
             return 'Local_Training'
 

@@ -19,7 +19,7 @@ Tips:
         - Centralized:
             data_dir to a directory containing all files for centralized training
         - Simulation:
-
+9. transition loop between local_training and global_aggregation will continue until `last_round` attribute becomes True
 """
 
 import utils
@@ -31,19 +31,22 @@ class MyApp(utils.FeatureCLoudApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.last_round = False
 
-    def load_data(self, config):
-        pass
+    def load_data(self):
+        return self.last_round
 
     def local_training(self, global_parameters):
-        pass
+        self.last_round = global_parameters
+        return [None]
 
     def global_aggregation(self, local_parameters):
-        pass
+        self.last_round = True
+        return self.last_round
 
     def write_results(self):
         pass
 
-    def centralized(self, config):
+    def centralized(self):
         pass
 

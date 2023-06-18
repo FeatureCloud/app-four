@@ -8,13 +8,13 @@ fc_example_config:
       label: "Group"
     init_model: "model.pt"
 
-  centralized:
-    data_dir: sample_data/c1
+#  centralized:
+#    data_dir: sample_data/c1
 
-#  simulation:
-#    clients: Client_1, Client_2
-#    dir: sample_data
-#    clients_dir: c1,c2 # Comma separated list of clients' directories
+  simulation:
+    clients: Client_1, Client_2
+    dir: sample_data
+    clients_dir: c1,c2 # Comma separated list of clients' directories
 
   logic:
     mode: "file"

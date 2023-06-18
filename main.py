@@ -28,9 +28,9 @@ if __name__ == '__main__':
         else:
             raise NotImplemented(f"Native execution is only available for 'centralized' or `simulation` scenarios")
     else:
-        if utils.is_centralized():
+        if utils.is_centralized(APP_NAME):
             utils.centralized(MyApp, APP_NAME)
         elif utils.is_simulation(APP_NAME):
             utils.simulate(config, APP_NAME, MyApp)
         else:
-            utils.federated()
+            utils.federated(MyApp, APP_NAME)
