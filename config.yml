@@ -1,26 +1,30 @@
 fc_example_config:
   local_dataset:
-    train: "train.npz"
-    test: "test.npz"
+    train: "scotland.csv"
+    test: "scotland.csv"
     central_test: null
     detail:
-      sep: ','
+      sep: '\t'
       label: "Group"
     init_model: "model.pt"
 
-  centralized: True
+  centralized:
+    data_dir: sample_data/c1
 
-  simulation:
-    clients_dir: c1,c2,c3 # Comma separated list of clients' directories
+#  simulation:
+#    clients: Client_1, Client_2
+#    dir: sample_data
+#    clients_dir: c1,c2 # Comma separated list of clients' directories
 
   logic:
     mode: "file"
     dir: "."
 
   result:
-    pred: "y_pred.csv"
-    target: "y_test.csv"
-    model: "model.pt"
+    normal_trainset: "y_pred.csv"
+    normal_testset: "y_test.csv"
+    detail:
+      sep: ','
 
 
   use_smpc: False

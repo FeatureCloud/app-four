@@ -1,31 +1,36 @@
-from bottle import Bottle
-
-from FeatureCloud.app.api.http_ctrl import api_server
-from FeatureCloud.app.api.http_web import web_server
-
-from FeatureCloud.app.engine.app import app
-import os
-import states
-
-server = Bottle()
-
-
-def is_native():
-    path_prefix = os.getenv("PATH_PREFIX")
-    if path_prefix:
-        return False
-    return True
-
-
-def run_app():
-    server.mount('/api', api_server)
-    server.mount('/web', web_server)
-    server.run(host='localhost', port=5000)
-
+"""
+    FeatureCloud Four States App  Template
+    Copyright 2023 Mohammad Bakhtiari. All Rights Reserved.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+        http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+"""
+import utils
+from myapp import MyApp, APP_NAME
 
 if __name__ == '__main__':
-    app.register()
-    if is_native():
-        app.handle_setup(client_id='1', coordinator=True, clients=['1'])
+    config = utils.read_config()[APP_NAME]
+    utils.print_configurations(config)
+    if utils.is_native():
+        print("The app will run in Native mode...")
+        if utils.is_centralized(APP_NAME):
+            print("Centralized analysis...")
+            utils.centralized(MyApp, APP_NAME)
+        elif utils.is_simulation(APP_NAME):
+            print("Simulating federated analysis...")
+            utils.simulate(config, APP_NAME, MyApp)
+        else:
+            raise NotImplemented(f"Native execution is only available for 'centralized' or `simulation` scenarios")
     else:
-        run_app()
+        if utils.is_centralized():
+            utils.centralized(MyApp, APP_NAME)
+        elif utils.is_simulation(APP_NAME):
+            utils.simulate(config, APP_NAME, MyApp)
+        else:
+            utils.federated()
