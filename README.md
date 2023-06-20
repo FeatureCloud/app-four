@@ -1,51 +1,112 @@
-# four State FeatureCloud Template 
+# app-four:  FeatureCloud Template with predefined four states 
 
-The app-blank template contains an initial state that does not execute commands other than transitioning to the terminal state.
-This template is a starting point for implementing apps by adding more states and operations.
+The app-four template contains four states for federated scenario, hence, we call it `app-four`. Using App-four template,
+developers can maximally focus on  developing app-specific operations rather than general federated features and services.
  
 
 For registering and testing your apps or using other apps, please visit
 [FeatureCloud.ai](https://featurecloud.ai/). And for more information about FeatureCloud architecture,
 please refer to 
 [The FeatureCloud AI Store for Federated Learning in Biomedicine and Beyond](https://arxiv.org/abs/2105.05734) [[1]](#1).
+## How it works
+In general, app four supports three scenarios (Centralized, Simulation, and Federated) in two modes (Native and Containerized)
+by automatically instantiating and running MyApp. Developers should implement their applications in MyApp class 
+which has five methods; except for `centralized` which is dedicated for centralized training, all other predefined
+methods will be called in corresponding predefined states.
+### Centralized training
+For centralized training, the app will imediately transition from `initial` state to `Centralized`, run the MyApp.centralized
+method, and then transition to terminal.
 
+![Centralized states diagram](images/centralized_state_diagram.png)
 
-## Developing Apps using FeatureCloud library
-FeatureCloud library facilitates app development inside the FeatureCloud platform. To develop apps, developers
-should define their states and register them to the default app.
+### Federated 
+For federated learning, the app executes the following states:
+1. initial: App runs the `MyApp.load_data` method, and broadcasts the returned values of the coordinator to all clients.
+2. local training: App runs the `MyApp.local_training` method, and sends the returned values to coordinator.
+3. global aggregation: App runs the `MyApp.global_aggregation` method, and broadcasts the returned values to clients.
+4. write results: App runs the `MyApp.write_results` method.
+5. terminal: App execution finishes
 
-### defining new states
-For defining new states, in general, developers can use [`AppState`](engine/README.md#appstate-defining-custom-states)
-which supports further communications, transitions, logging, and operations.
+![Federated states diagram](images/federated_state_diagram.png)
 
-#### AppState
-[`AppState`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine#appstate-defining-custom-states) is the building block of FeatureCloud apps that covers
-all the scenarios with the verifying mechanism. Each state of 
-the app should extend [`AppState`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine#appstate-defining-custom-states), which is an abstract class with two specific abstract methods:
-- [`register`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine/README.md#registering-a-specific-transition-for-state-register_transition):
-should be implemented by apps to register possible transitions between the current state to other states.
-This method is part of verifying mechanism in FeatureCloud apps that ensures logically eligible roles can participate in the current state
-and transition to other ones.
-- [`run`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app/engine/README.md#executing-states-computation-run): executes all operations and calls for communication between FeatureCloud clients.
-`run` is another part of the verification mechanism in the FeatureCloud library that ensures the transitions to other states are logically correct
-by returning the name of the next state.
+### Modes
+FeatureCloud application are primarily designed and implemented to be used in federated workflows on real-world scenarios.
+However, for app developers, it would be convenient to implemenyt and test their applications natively, and without containerization.
+Therefore, App-four supports tow execution modes to facilitate the app development by supporting most of the functionalities natively.
+We suggest, app developers, first develop and test their applications natively, and then test it in containerized mode. 
+The modes are completely transparent and one can run the app with terminal without building the docker images. On the other hand, 
+they can run their apps using testbed and workflow in containerized mode. 
 
+#### Native
+All codes will be run natively, simply by running `python3 main.py` In this mode, no SMPC is supported and required communications
+will be handled internally without passing any data on network.
+#### Containerized
+The app will be executed through the FeatureCloud controller and all the communications passes the controller.
+Every app instance will be executed as docker container, where has its own mounted drives. All the functionalities are supported.   
 
-### Registering apps
-For each state, developers should extend one of the abstract states and call the helper function to register automatically
-the state in the default FeatureCloud app:
+### Scenarios
+App-four template supports three scenarios to cover all needs of app developers:
+* Centralized: to implement and test centralized model in both modes. Many of the implemented methods, classes, etc., can be used
+for both centralized and federated.
+* Simulation : it is a federated scenario that can be run in both modes. For containerized, there will be only 
+one container instance (one client) that simulates and runs all the clients.
+* Federated: Real-world scenario with completetly independent app container instances for clients.
 
-```angular2html
-@app_state(name='initial', role=Role.BOTH, app_name='example')
-class ExampleState(AppState):
-    def register(self):
-        self.register_transition('terminal', Role.BOTH)
+All the scenarios are covered in the config file; once there are no centralized or simulation in the config file,
+federated scenario will be executed.
 
-    def run(self):
-        self.read_config()
-        self.app.log(self.config)
-        return 'terminal'
+## App development
+One should start the development with implementing MyApp class, which is inherits FeatureCloudApp.
+```python
+class MyApp(utils.FeatureCLoudApp):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_round = False
+
+    def load_data(self):
+        return self.last_round
+
+    def local_training(self, global_parameters):
+        self.last_round = global_parameters
+        return [None]
+
+    def global_aggregation(self, local_parameters):
+        self.last_round = True
+        return self.last_round
+
+    def write_results(self):
+        pass
+
+    def centralized(self):
+        pass
+
 ```
+### Methods
+#### Federated
+Four methods of `load_data`, `local_training(self, global_parameters)`, `self.last_round = global_parameters`,
+`global_aggregation(self, local_parameters)`, and `def write_results` should be implemented.
+##### Training loop
+the app starts the training loop by transitioning to locat_training state. Then, for every communication round,
+coordinator (one of the clients), will transition to aggregate state, runs the aggregation method and broadcasts 
+the global parameters to clients. Meantime, other clients, will wait for global parameters in the local training state.
+All the transitions and data communication happens automatically. However, developers should expect to receive the global 
+parameters and local models as input for corresponding methods.
+
+To break the loop and move to `write_results` method, developers should turn the `last_round` attribute to `True`. 
+
+### Data access
+Data will be in different locations, therefore, users should give the path to folder containing data in the config file for centralized and simulation scenario.
+For federated scenario, data will be uploaded in a workflow, or path will be provided in the testbed. However, the data root path is different for Native and Containerized mode. 
+Developers should use `self.input_root_dir` and `self.output_root_dir` to access the data. 
+
+```python
+path_to_train = f"{self.input_root_dir}/{self.config['local_dataset']['train']}"
+```
+This example not only shows how to access the data, but shows how one can access the content of config.yml file inside the app.
+
+In a similar fashion, one can handle the output data with this consideration that the app execution in native mode
+overrides the output directory.
 
 ### building the app docker image
 Once app implementation is done, building the docker image for testing or adding it to
