@@ -1,5 +1,5 @@
 """
-    FeatureCloud Four States App  Template
+    FeatureCloud Four States App Template
     Copyright 2023 Mohammad Bakhtiari. All Rights Reserved.
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,6 +16,18 @@ from FeatureCloud.app.engine.app import AppState, app_state, Role
 
 
 def create_client(target_app_instance, general_app_instance, centralized=False):
+    """ Generate states for a client based on centralized or federated scenario
+
+    Parameters
+    ----------
+    target_app_instance: MyApp
+    general_app_instance: app
+    centralized: bool
+
+    Returns
+    -------
+    general_app_instance
+    """
     if centralized:
         return generate_centralized_states(general_app_instance, target_app_instance)
     return generate_federated_states(target_app_instance, general_app_instance)
@@ -25,7 +37,7 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
     @app_state(name='initial', role=Role.BOTH, app_instance=general_app_instance)
     class InitialState(AppState):
         def register(self):
-            self.register_transition('Local_Training')
+            self.register_transition('Local_Training', label='Broadcast initial parameters')
 
         def run(self):
             data_to_broadcast = target_app_instance.load_data()
@@ -38,9 +50,9 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
     class LocalTraining(AppState):
 
         def register(self):
-            self.register_transition('Global_Aggregation', role=Role.COORDINATOR)
-            self.register_transition('Local_Training', role=Role.PARTICIPANT)
-            self.register_transition('Write_Results', role=Role.BOTH)
+            self.register_transition('Global_Aggregation', role=Role.COORDINATOR, label='Collect and aggregate local models')
+            self.register_transition('Local_Training', role=Role.PARTICIPANT, label='Wait for another round of local training')
+            self.register_transition('Write_Results', role=Role.BOTH, label='Scape the loop')
 
         def run(self):
             received_data = self.await_data()
@@ -58,7 +70,7 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
     class GlobalAggregation(AppState):
 
         def register(self):
-            self.register_transition('Local_Training', role=Role.COORDINATOR)
+            self.register_transition('Local_Training', role=Role.COORDINATOR, label='Broadcat the global models and go to the next next round')
 
         def run(self):
             if target_app_instance.config['use_smpc']:
@@ -74,7 +86,7 @@ def generate_federated_states(target_app_instance, general_app_instance=None):
     class WriteResults(AppState):
 
         def register(self):
-            self.register_transition('terminal')
+            self.register_transition('terminal', label='Finish app execution')
 
         def run(self):
             target_app_instance.write_results()
@@ -88,7 +100,7 @@ def generate_centralized_states(general_app_instance, target_app_instance):
     class InitialState(AppState):
 
         def register(self):
-            self.register_transition('Centralized')
+            self.register_transition('Centralized', label='Immediate transition')
 
         def run(self):
             return 'Centralized'
@@ -97,7 +109,7 @@ def generate_centralized_states(general_app_instance, target_app_instance):
     class Centralized(AppState):
 
         def register(self):
-            self.register_transition('terminal')
+            self.register_transition('terminal', label='Finish centralized training')
 
         def run(self):
             target_app_instance.centralized()
