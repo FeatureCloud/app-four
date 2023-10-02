@@ -437,11 +437,8 @@ def simulate(config: dict, app_name: str, MyApp: AppFour):
     controller = Controller(clients_ids)
     for i, (client_id, client_dir) in enumerate(zip(clients_ids, clients_dirs)):
         app = App()
-        states.create_client(
-            MyApp(config=read_config()[app_name],
-                  simulation_dir=client_dir)
-            , app
-        )
+        app_four = MyApp(config=read_config()[app_name], simulation_dir=client_dir)
+        states.create_client(app_four, app)
         controller.register(client_id, app, coordinator=i == 0)
     controller.run()
 
@@ -462,12 +459,8 @@ def centralized(app_class: AppFour, app_name: str):
     config = read_config()[app_name]
     print(f"centralized: {config['centralized']}")
     featurecloud_app = App()
-    states.create_client(
-        app_class(
-            config=config,
-            simulation_dir=config['centralized'].get('data_dir', None)
-        ), featurecloud_app, centralized=True
-    )
+    app_four = app_class(config=config, simulation_dir=config['centralized'].get('data_dir', None))
+    featurecloud_app = states.create_client(app_four, featurecloud_app, centralized=True)
     featurecloud_app.register()
     featurecloud_app.handle_setup(client_id='1', coordinator=True, clients=['1'])
 
