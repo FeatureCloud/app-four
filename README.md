@@ -85,6 +85,7 @@ For centralized training, the app will imediately transition from `initial` stat
 method, and then transition to terminal.
 
 ![Centralized states diagram](images/centralized_state_diagram.png)
+Beware that `initial` method will not run in centralized scenario. In case you need, you should `initial` method in `centralized`. 
 ### Modes
 FeatureCloud application are primarily designed and implemented to be used in federated workflows on real-world scenarios.
 However, for app developers, it would be convenient to implemenyt and test their applications natively, and without containerization.
@@ -116,8 +117,14 @@ Even though FeatureCloud apps are primarily designed and intended to be used in 
 after developing you applications you have a couple of options to test it. Here we cover the options based on a recommended order for development (mode vs scenario):
 
 1. Native Centralized:
+```bash
+$ python PATH/TO/YOR/APP/main.py
+```
 2. Containerized Centralized:
 3. Native Simulation:
+```bash
+$ python PATH/TO/YOR/APP/main.py
+```
 4. Containerized Simulation:
 5. Containerized federated
 
@@ -128,30 +135,41 @@ can be used in workflow (federated project), developers should test their apps a
 One should start the development with implementing MyApp class, which is inherits FeatureCloudApp.
 
 ```python
-class MyApp(AppFour):
+class MyAppFour(utils.AppFour):
 
-   def __init__(self, **kwargs):
-      super().__init__(**kwargs)
-      self.last_round = False
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_round = False
 
-   def initial(self):
-      return self.last_round
+    def initial(self):
+        return self.last_round
 
-   def local_training(self, global_parameters):
-      self.last_round = global_parameters
-      return [None]
+    def local_training(self, global_parameters):
+        self.last_round = global_parameters
+        return [None]
 
-   def global_aggregation(self, local_parameters):
-      self.last_round = True
-      return self.last_round
+    def global_aggregation(self, local_parameters):
+        self.last_round = True
+        return self.last_round
 
-   def write_results(self):
-      pass
+    def write_results(self):
+        pass
 
-   def centralized(self):
-      pass
+    def centralized(self):
+        pass
 
 ```
+
+   In the default `MyAppFour` class, to break the cycle of rounds (transitions between local training and global aggregation states)
+   a `last_round` boolean value was used in a way that coordinator informs others about the last round in  `initial` method,
+   while all participants check for last round as their received global parameters in `local_training` method. The value is False, so
+   `self.last_round` will be set as `False`. Beware that app-four template always check `self.last_round` after executing the `local_training` 
+   method. So, the coordinator transitions to `global_aggregation` state/method, and ignores received `local_parameters` in this case.
+   to ensure this is the last round, the coordinator sets `self.last_round` as `True` and broadcasts it. Meantime, participants loop back to 
+   `local_training` and await for receiving the global parameters. The moment parameters are received, they run the method and set the last round.
+   This time, last round is `True` for all clients (Coordinator and participants), therefore, the cycle is stopped, and all clients will move
+   to `write_results` state/method.
+   
 ### Methods
 #### Federated
 Four methods of `load_data`, `local_training(self, global_parameters)`, `self.last_round = global_parameters`,
@@ -173,10 +191,50 @@ Developers should use `self.input_root_dir` and `self.output_root_dir` to access
 ```python
 path_to_train = f"{self.input_root_dir}/{self.config['local_dataset']['train']}"
 ```
-This example not only shows how to access the data, but shows how one can access the content of config.yml file inside the app.
+This example not only shows how to access the data, but also shows how one can access the content of config.yml file inside the app.
 
 In a similar fashion, one can handle the output data with this consideration that the app execution in native mode
 overrides the output directory.
+#### Native mode
+##### Simulation data structure
+   After running your containers in FeatureCloud test-bed or workflow, the input data will be cloned from the specified path to 
+   `/mnt/input` inside the container. However, in native mode the data should be in your app's root directory. Developers can set the name 
+   of the directory and subdirectories in the config file:
+```yaml
+  simulation:
+    clients: Client_1, Client_2
+    dir: sample_data
+    clients_dir: c1,c2 # Comma separated list of clients' directories
+```
+   Beware that the structure and keys of the simulation configs should not be changed. However, the directory names can be changes. usually,
+   in a federated workflow, each clients has its own data, possibly, with different names. Here, for simulation, we assume the 
+   data files have the same name but they are provided in different subdirectories. All data are located in `sample_data`, while, for two clients, each client data is located in `c1`
+   and `c2`. Beware that for simulation, the number of clients will be according to the number of comma-separated clients ids
+   in `clients`, e.g., `Client_1, Client_2`.
+
+##### Centralized input data structure
+   The input data structure for centralized scenario in native mode is very similar to the simulation  scenario. Just make
+   sure you only put either `centralized` or `simulation` settings in the config file.
+```yaml
+  centralized:
+    data_dir: sample_data/c1
+```
+Here, we simply used the path to one of the clients' data as input directory.
+##### Output data structure
+   After running your containers in FeatureCloud test-bed, the results will be cloned from `/mnt/output` in container into the 
+   `PATH/TO/CONTROLLER/data/tests` but in native mode, the results wil be written into `PATH/TO/YOUR/APP/results` directory.
+   beware that the path is fixed for native mode and the directory will be overwritten after each execution.
+
+#### Containerized mode
+   For running a federated workflow or test bed, one container will be instantiated for each client. and the data will be cloned to `mnt/input`.
+   However, simulation and centralized scenario in containerized mode, only one container will be ran. So, one should do the folloowinbgs:
+   * Run the test-bed for one client
+   * Give the path to directory including all clients' data
+   * Put config file in the same directory as data.
+   * The rest will be handles through the config file similar to native mode. 
+     * Put all data in the controller's data directory.
+     * Put config.yml file in generic directory.
+     * Provide the path to generic directory.
 
 ### building the app docker image
 Once app implementation is done, building the docker image for testing or adding it to
@@ -251,6 +309,11 @@ Each app may need some hyper-parameters or arguments that the end-users should p
 in [`config.yml`](https://github.com/FeatureCloud/FeatureCloud/tree/master/FeatureCloud/app#config-file-configyml), which should be read and interpreted by the app. 
 
 ### Run YOUR_APPLICATION
+## Limitations
+   AppFour is limited to have four fixed states for federated scenarion and two fixed states for centralized scenarios.
+   This fixed number of states with fixed transitions and data communications causes some limitations:
+   * FeatureCloud app plot-states command does not work for apps developed using app-four template.
+   * 
 
 #### Prerequisite
 
