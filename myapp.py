@@ -27,13 +27,13 @@ import utils
 APP_NAME = "fc_example_config"
 
 
-class MyApp(utils.FeatureCLoudApp):
+class MyAppFour(utils.AppFour):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.last_round = False
 
-    def load_data(self):
+    def initial(self):
         return self.last_round
 
     def local_training(self, global_parameters):

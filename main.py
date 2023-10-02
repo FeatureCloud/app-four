@@ -12,7 +12,7 @@
     limitations under the License.
 """
 import utils
-from myapp import MyApp, APP_NAME
+from myapp import MyAppFour, APP_NAME
 
 if __name__ == '__main__':
     config = utils.read_config()[APP_NAME]
@@ -21,16 +21,16 @@ if __name__ == '__main__':
         print("The app will run in Native mode...")
         if utils.is_centralized(APP_NAME):
             print("Centralized analysis...")
-            utils.centralized(MyApp, APP_NAME)
+            utils.centralized(MyAppFour, APP_NAME)
         elif utils.is_simulation(APP_NAME):
             print("Simulating federated analysis...")
-            utils.simulate(config, APP_NAME, MyApp)
+            utils.simulate(config, APP_NAME, MyAppFour)
         else:
             raise NotImplemented(f"Native execution is only available for 'centralized' or `simulation` scenarios")
     else:
         if utils.is_centralized(APP_NAME):
-            utils.centralized(MyApp, APP_NAME)
+            utils.centralized(MyAppFour, APP_NAME)
         elif utils.is_simulation(APP_NAME):
-            utils.simulate(config, APP_NAME, MyApp)
+            utils.simulate(config, APP_NAME, MyAppFour)
         else:
-            utils.federated(MyApp, APP_NAME)
+            utils.federated(MyAppFour, APP_NAME)

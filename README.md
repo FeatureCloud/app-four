@@ -1,34 +1,90 @@
-# app-four:  FeatureCloud Template with predefined four states 
+# MyAppFour - A Template For Federated Learning Application 
 
-The app-four template contains four states for federated scenario, hence, we call it `app-four`. Using App-four template,
-developers can maximally focus on  developing app-specific operations rather than general federated features and services.
- 
+Welcome to the appfour template repository! This is designed to help you get started with developing your own federated learning (FL) applications. The template provides a foundational structure, so you can focus on the unique aspects of your application. This README will guide you through using the template, testing your application, and publishing it to the app store.
 
 For registering and testing your apps or using other apps, please visit
 [FeatureCloud.ai](https://featurecloud.ai/). And for more information about FeatureCloud architecture,
 please refer to 
 [The FeatureCloud AI Store for Federated Learning in Biomedicine and Beyond](https://arxiv.org/abs/2105.05734) [[1]](#1).
+
+## Getting Started with Development
+1. Create your app
+```bash
+featurecloud app new YOUR_APPLICATION --template-name app-four
+```
+Or start by cloning this repository to your local machine.
+```bash
+git clonehttps://github.com/FeatureCloud/app-four.git
+```
+Then one can open the p[roject with its favorite IDE and start developing.
+2. Understand the Structure:
+
+   MyAppFour class will go through four states for federated scenario and two states for centralized scenario. All FeatureCloud apps 
+   have a terminal state which is designed to flag the end of app execution with no other functionality, so, we will not
+   consider it as state here. For each state there is counterpart method in MyAppFour which carries all the operations.
+   MyAppFour inherits AppFour class, so it would be helpful developers familiarize themselves with `myapp.py` (the primary application logic)
+   and `utils.py` (Utility functions and classes to support the app.)
+
+3. Develop Your App:
+
+   We encourage you to follow the following steps to speed up the app development and testing process:
+   - Start with centralized scenario in native mode. Test and validate your app in centralized mode.
+   - Build the image and test it in containerized mode.
+   - continue development by implementing federated simulation scenario in centralized mode.
+   - Test you app in centralized mode. From this point, most probably your app will work in the upcoming tests.
+   - Optional: Test your app in simulation scenario in containerized mode.
+   - Test your app in a real world federated scenario in containerized mode
+
+   Replace the example code in `myapp.py` with your application logic. Ensure you do not rename key classes or methods as other parts of the template depend on them.
+   When developing or modifying the application, ensure that the methods of `MyApp` class align with the expected behavior defined in its parent class from `utils.py`.
+
+      Always check the app's configuration and structure against the `config.yml` for consistency.
+
+4. Additional Notes:
+   - The application name defined by APP_NAME is case-sensitive. It should contain the name of the app as a string and match the name of the config file.
+   - Always name the configuration file as `config.yml`.
+   - For Native Centralized mode, data_dir should point to a directory containing all files necessary for centralized training. 
+   - For Native Simulation mode, [Details are missing in the provided code]
+   - Do not rename the MyApp class and its five methods in myapp.py.
+   - For the native execution, if centralized, it points data_dir to a directory containing all files for centralized training.   - 
+   - In federated scenarios, for each client an instance of the `MyAppFour` will be executed.
+   - The firsty client will be coordinator and the rest will be participants.
+   - All the clients will follow the same states from initial to terminal except for the coordinator (first client) who goes to the aggregation state.
+   - Data communication happens according to the return of the methods.
+   - In `intial` method, What coordinator returns  will be broadcast to all clients. What other clients return will be discarded!
+   - Clients receive the broadcast data as `local_training` method's input.
+   - As long as `last_round` attribute is `False`, each keep executing `local_training` method for each round.
+   - As long as `last_round` attribute is `False`, the coordinator executes `local_training` and `global_aggregation`, respectively will continue .
+
+
 ## How it works
 In general, app four supports three scenarios (Centralized, Simulation, and Federated) in two modes (Native and Containerized)
 by automatically instantiating and running MyApp. Developers should implement their applications in MyApp class 
 which has five methods; except for `centralized` which is dedicated for centralized training, all other predefined
 methods will be called in corresponding predefined states.
+
+### Federated
+   For federated learning, the app executes the following states:
+   1. initial: App runs the `MyApp.initial` method, and broadcasts the returned values of the coordinator to all clients.
+   2. local training: App runs the `MyApp.local_training` method, and sends the returned values to coordinator.
+   3. global aggregation: App runs the `MyApp.global_aggregation` method, and broadcasts the returned values to clients.
+   4. write results: App runs the `MyApp.write_results` method.
+   5. terminal: App execution finishes
+
+   ![Federated states diagram](images/federated_state_diagram.png)
+
+   As the federated diagram shows, the app will  start with running initial method/state, and finishes by running write results method/state. 
+   Those are the states that will be ran only once. On the other hand, there is a cycle of repetitive transitions between local training and global aggregation
+   which goes on until the last round. Each time that the cycle take place will be called a communication round. The cycle can be stopped with
+   a fix maximum nuber of rounds and/or stoppage criteria. It is upon developers to stop the cycle via setting `last_round` attribute to `True`.
+   
+   
+
 ### Centralized training
 For centralized training, the app will imediately transition from `initial` state to `Centralized`, run the MyApp.centralized
 method, and then transition to terminal.
 
 ![Centralized states diagram](images/centralized_state_diagram.png)
-
-### Federated 
-For federated learning, the app executes the following states:
-1. initial: App runs the `MyApp.load_data` method, and broadcasts the returned values of the coordinator to all clients.
-2. local training: App runs the `MyApp.local_training` method, and sends the returned values to coordinator.
-3. global aggregation: App runs the `MyApp.global_aggregation` method, and broadcasts the returned values to clients.
-4. write results: App runs the `MyApp.write_results` method.
-5. terminal: App execution finishes
-
-![Federated states diagram](images/federated_state_diagram.png)
-
 ### Modes
 FeatureCloud application are primarily designed and implemented to be used in federated workflows on real-world scenarios.
 However, for app developers, it would be convenient to implemenyt and test their applications natively, and without containerization.
@@ -50,36 +106,50 @@ App-four template supports three scenarios to cover all needs of app developers:
 for both centralized and federated.
 * Simulation : it is a federated scenario that can be run in both modes. For containerized, there will be only 
 one container instance (one client) that simulates and runs all the clients.
-* Federated: Real-world scenario with completetly independent app container instances for clients.
+* Federated: Real-world scenario with completely independent app container instances for clients.
 
 All the scenarios are covered in the config file; once there are no centralized or simulation in the config file,
 federated scenario will be executed.
 
+## Testing Your Application
+Even though FeatureCloud apps are primarily designed and intended to be used in a real-world federated workflow in containerized mode by data owners like hospitals,
+after developing you applications you have a couple of options to test it. Here we cover the options based on a recommended order for development (mode vs scenario):
+
+1. Native Centralized:
+2. Containerized Centralized:
+3. Native Simulation:
+4. Containerized Simulation:
+5. Containerized federated
+
+All the aforementioned options are for testing you app as a standalone app. Once the app is development is over, to make sure the app 
+can be used in workflow (federated project), developers should test their apps alongside other companion apps in a workflow.
+
 ## App development
 One should start the development with implementing MyApp class, which is inherits FeatureCloudApp.
+
 ```python
-class MyApp(utils.FeatureCLoudApp):
+class MyApp(AppFour):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.last_round = False
+   def __init__(self, **kwargs):
+      super().__init__(**kwargs)
+      self.last_round = False
 
-    def load_data(self):
-        return self.last_round
+   def initial(self):
+      return self.last_round
 
-    def local_training(self, global_parameters):
-        self.last_round = global_parameters
-        return [None]
+   def local_training(self, global_parameters):
+      self.last_round = global_parameters
+      return [None]
 
-    def global_aggregation(self, local_parameters):
-        self.last_round = True
-        return self.last_round
+   def global_aggregation(self, local_parameters):
+      self.last_round = True
+      return self.last_round
 
-    def write_results(self):
-        pass
+   def write_results(self):
+      pass
 
-    def centralized(self):
-        pass
+   def centralized(self):
+      pass
 
 ```
 ### Methods
@@ -212,7 +282,10 @@ You can run YOUR_APPLICATION as a standalone app in the [FeatureCloud test-bed](
 featurecloud test start --app-image featurecloud.ai/YOUR_APPLICATION --client-dirs './sample/c1,./sample/c2' --generic-dir './sample/generic'
 ```
 
+### Future Plans:
 
+* Extend the state transition mechanism for more complex training scenarios.
+* Integrate with additional machine learning frameworks.
 
 ### References
 <a id="1">[1]</a> 
