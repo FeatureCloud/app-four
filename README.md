@@ -44,7 +44,7 @@ Then one can open the p[roject with its favorite IDE and start developing.
    - The application name defined by APP_NAME is case-sensitive. It should contain the name of the app as a string and match the name of the config file.
    - Always name the configuration file as `config.yml`.
    - For Native Centralized mode, data_dir should point to a directory containing all files necessary for centralized training. 
-   - For Native Simulation mode, [Details are missing in the provided code]
+   - For Native Simulation mode, data dir is configuration is explained in [simulation data structure](README.md#simulation-data-structure).
    - Do not rename the MyApp class and its five methods in myapp.py.
    - For the native execution, if centralized, it points data_dir to a directory containing all files for centralized training.   - 
    - In federated scenarios, for each client an instance of the `MyAppFour` will be executed.
@@ -62,6 +62,10 @@ In general, app four supports three scenarios (Centralized, Simulation, and Fede
 by automatically instantiating and running MyApp. Developers should implement their applications in MyApp class 
 which has five methods; except for `centralized` which is dedicated for centralized training, all other predefined
 methods will be called in corresponding predefined states.
+
+In general, we assume your program is simple enough that does not need to costumize or change many of provided functionalities 
+in FeatureCloud. Therefore, some steps of Dockerization and connection to the controller are transparently implemented in
+`utils`. 
 
 ### Federated
    For federated learning, the app executes the following states:
